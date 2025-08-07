@@ -1,0 +1,24 @@
+{
+    "client": {
+        "Orders": {
+            "mapperType": "MUSTACHE",
+            "templateName": "ORDER_DETAIL",
+            "jsonPath": ["$.orders[*]", "$.user"]
+        },
+        "UserSummary": {
+            "mapperType": "MUSTACHE",
+            "templateName": "USER_WITH_STATS",
+            "jsonPath": ["$.user", "$.statistics", "$.settings.preferences"]
+        },
+        "ProductRecommendations": {
+            "mapperType": "MUSTACHE",
+            "templateName": "PRODUCT_RECOMMENDATIONS",
+            "jsonPath": ["$.recommendations[*]", "$.user.preferences", "$.marketingData"]
+        },
+        "SingleSourceOrder": {
+            "mapperType": "MUSTACHE",
+            "templateName": "SIMPLE_ORDER",
+            "jsonPath": "$.orders[0]"
+        }
+    }
+}

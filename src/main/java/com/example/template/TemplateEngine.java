@@ -5,7 +5,6 @@ import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 
@@ -25,18 +24,33 @@ public class TemplateEngine {
     /**
      * Render template with data wrapper
      */
-    public String render(String templateName, JsonNodeWrapper dataWrapper) throws IOException {
+    public String render(String templateName, JsonNodeWrapper dataWrapper) {
         String templateContent = templateRegistry.getTemplate(templateName);
         return renderTemplate(templateContent, dataWrapper);
     }
     
     /**
+     * Render template with any data object (supports both JsonNodeWrapper and MultiSourceDataContext)
+     */
+    public String render(String templateName, Object dataObject) {
+        String templateContent = templateRegistry.getTemplate(templateName);
+        return renderTemplate(templateContent, dataObject);
+    }
+    
+    /**
      * Render template string with data wrapper
      */
-    public String renderTemplate(String templateContent, JsonNodeWrapper dataWrapper) throws IOException {
+    public String renderTemplate(String templateContent, JsonNodeWrapper dataWrapper) {
+        return renderTemplate(templateContent, (Object) dataWrapper);
+    }
+    
+    /**
+     * Render template string with any data object
+     */
+    public String renderTemplate(String templateContent, Object dataObject) {
         Mustache mustache = mustacheFactory.compile(new StringReader(templateContent), "template");
         StringWriter writer = new StringWriter();
-        mustache.execute(writer, dataWrapper);
+        mustache.execute(writer, dataObject);
         return writer.toString().trim();
     }
 }

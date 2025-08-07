@@ -1,6 +1,8 @@
 package com.example.wrapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,9 +14,11 @@ import java.util.Map;
  * Wrapper that provides seamless access to JsonNode properties in Mustache templates
  * This class implements Map-like behavior to work with Mustache.java
  */
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class JsonNodeWrapper extends HashMap<String, Object> {
     
-    private final JsonNode node;
+    private final transient JsonNode node;
     
     public JsonNodeWrapper(JsonNode node) {
         super();
@@ -84,19 +88,18 @@ public class JsonNodeWrapper extends HashMap<String, Object> {
         }
         
         // Fallback to direct node access
-        if (key instanceof String) {
-            String propertyName = (String) key;
-            
-            if ("size".equals(propertyName) && node != null && node.isArray()) {
+        if (key instanceof String keyName) {
+
+            if ("size".equals(keyName) && node != null && node.isArray()) {
                 return node.size();
             }
             
-            if (propertyName.contains(".")) {
-                return getValueByPath(propertyName);
+            if (keyName.contains(".")) {
+                return getValueByPath(keyName);
             }
             
-            if (node != null && node.has(propertyName)) {
-                return convertJsonValue(node.get(propertyName));
+            if (node != null && node.has(keyName)) {
+                return convertJsonValue(node.get(keyName));
             }
         }
         
@@ -129,10 +132,6 @@ public class JsonNodeWrapper extends HashMap<String, Object> {
         }
         
         return convertJsonValue(current);
-    }
-    
-    public JsonNode getNode() {
-        return node;
     }
     
     @Override

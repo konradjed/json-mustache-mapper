@@ -6,17 +6,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class JsonPathExtractorTest {
+class JsonPathExtractorTest {
     
     private JsonPathExtractor extractor;
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private JsonNode testJson;
     
     @BeforeEach
     void setUp() throws Exception {
         extractor = new JsonPathExtractor();
-        objectMapper = new ObjectMapper();
-        
+
         String jsonString = """
             {
                 "user": {

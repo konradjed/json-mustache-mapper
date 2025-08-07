@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TemplateRegistryTest {
+class TemplateRegistryTest {
     
     private TemplateRegistry registry;
     
@@ -18,7 +18,7 @@ public class TemplateRegistryTest {
         assertTrue(registry.hasTemplate("ORDER_DETAIL"));
         assertTrue(registry.hasTemplate("USER_SUMMARY"));
         assertTrue(registry.hasTemplate("SETTINGS_INFO"));
-        assertEquals(3, registry.getTemplateCount());
+        assertEquals(6, registry.getTemplateCount());
     }
     
     @Test
@@ -27,7 +27,7 @@ public class TemplateRegistryTest {
         
         assertTrue(registry.hasTemplate("TEST_TEMPLATE"));
         assertEquals("Hello {{name}}!", registry.getTemplate("TEST_TEMPLATE"));
-        assertEquals(4, registry.getTemplateCount());
+        assertEquals(7, registry.getTemplateCount());
     }
     
     @Test

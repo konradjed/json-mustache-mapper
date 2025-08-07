@@ -1,0 +1,60 @@
+{
+    "user": {
+        "id": "user123",
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "preferences": {
+            "category": "electronics",
+            "priceRange": "mid-tier"
+        },
+        "membershipLevel": "gold"
+    },
+    "orders": [
+        {
+            "orderId": "ORD001",
+            "productName": "Wireless Headphones",
+            "quantity": 1,
+            "price": 99.99,
+            "status": "shipped"
+        },
+        {
+            "orderId": "ORD002", 
+            "productName": "Smartphone Case",
+            "quantity": 2,
+            "price": 25.99,
+            "status": "processing"
+        }
+    ],
+    "statistics": {
+        "totalOrders": 15,
+        "totalSpent": 1249.87,
+        "averageOrderValue": 83.32,
+        "loyaltyPoints": 2499
+    },
+    "settings": {
+        "preferences": {
+            "language": "en",
+            "currency": "USD",
+            "notifications": true
+        }
+    },
+    "recommendations": [
+        {
+            "productId": "REC001",
+            "name": "Bluetooth Speaker",
+            "score": 0.95,
+            "category": "electronics"
+        },
+        {
+            "productId": "REC002",
+            "name": "Wireless Charger", 
+            "score": 0.87,
+            "category": "electronics"
+        }
+    ],
+    "marketingData": {
+        "campaignId": "CAMP2024Q1",
+        "segment": "premium_electronics",
+        "discount": 15
+    }
+}

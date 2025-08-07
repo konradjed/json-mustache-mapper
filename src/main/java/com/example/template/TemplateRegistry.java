@@ -21,10 +21,11 @@ public class TemplateRegistry {
      */
     private void initializeDefaultTemplates() {
         addTemplate("ORDER_DETAIL", """
-            Order ID: {{id}}
-            Product: {{product}} ({{quantity}}x)
+            Order ID: {{orderId}}
+            Product: {{productName}} ({{quantity}}x)
             Price: ${{price}}
             Status: {{status}}
+            Customer: {{source2.name}} ({{source2.email}})
             """);
             
         addTemplate("USER_SUMMARY", """
@@ -34,6 +35,27 @@ public class TemplateRegistry {
             
         addTemplate("SETTINGS_INFO", """
             Theme: {{theme}}, Notifications: {{notifications}}
+            """);
+            
+        // Multi-source templates
+        addTemplate("USER_WITH_STATS", """
+            User: {{name}} ({{email}})
+            Membership: {{membershipLevel}}
+            Total Orders: {{source2.totalOrders}}
+            Total Spent: ${{source2.totalSpent}}
+            Language: {{source3.language}}
+            Currency: {{source3.currency}}
+            """);
+            
+        addTemplate("PRODUCT_RECOMMENDATIONS", """
+            Recommended: {{name}} (Score: {{score}})
+            For {{source2.category}} lover {{source2.priceRange}}
+            Campaign: {{source3.campaignId}} - {{source3.discount}}% off
+            """);
+            
+        addTemplate("SIMPLE_ORDER", """
+            Order: {{orderId}} - {{productName}}
+            Qty: {{quantity}}, Price: ${{price}}
             """);
     }
     

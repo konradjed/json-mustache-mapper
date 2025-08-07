@@ -1,13 +1,16 @@
 package com.example;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Main application demonstrating the JSON structure mapping capabilities
  */
+@Slf4j
 public class Main {
-    
+
     public static void main(String[] args) {
         JsonStructureMapper mapper = new JsonStructureMapper();
         
@@ -25,15 +28,15 @@ public class Main {
                     },
                     "orders": [
                         {
-                            "id": "ORD-001",
-                            "product": "Laptop",
+                            "orderId": "ORD-001",
+                            "productName": "Laptop",
                             "price": 1299.99,
                             "quantity": 1,
                             "status": "shipped"
                         },
                         {
-                            "id": "ORD-002", 
-                            "product": "Mouse",
+                            "orderId": "ORD-002",
+                            "productName": "Mouse",
                             "price": 29.99,
                             "quantity": 2,
                             "status": "pending"
@@ -75,16 +78,16 @@ public class Main {
             // Transform JSON structure
             String result = mapper.transformJsonStructure(sourceJson, mappingConfig);
             
-            System.out.println("🎯 JSON Structure Mapping Result:");
-            System.out.println("=".repeat(50));
-            System.out.println(result);
+            log.info("🎯 JSON Structure Mapping Result:");
+            log.info("=".repeat(50));
+            log.info(result);
             
             // Demonstrate template registration
             mapper.registerTemplate("CUSTOM_ORDER", "📦 {{product}} - {{quantity}} units @ ${{price}}");
-            System.out.println("\n✅ Custom template registered successfully!");
+            log.info("\n✅ Custom template registered successfully!");
             
         } catch (Exception e) {
-            System.err.println("❌ Error: " + e.getMessage());
+            log.error("❌ Error: {}", e.getMessage());
             e.printStackTrace();
         }
     }

@@ -1,26 +1,20 @@
 package com.example.config;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+
+import java.util.*;
 
 /**
  * Represents a mapping configuration that defines how to transform
  * source JSON structure to target JSON structure.
  */
+@Data
+@RequiredArgsConstructor
 public class MappingConfiguration {
     
     private final Map<String, Object> configMap;
-    
-    public MappingConfiguration(Map<String, Object> configMap) {
-        this.configMap = configMap;
-    }
-    
-    public Map<String, Object> getConfigMap() {
-        return configMap;
-    }
-    
+
     /**
      * Check if a configuration entry is a mapping rule
      */
@@ -53,7 +47,6 @@ public class MappingConfiguration {
     /**
      * Extract JSONPath expressions from configuration, handling both single and multiple paths
      */
-    @SuppressWarnings("unchecked")
     private List<String> extractJsonPaths(Map<String, Object> ruleMap) {
         Object jsonPathValue = ruleMap.get("jsonPath");
         
@@ -61,47 +54,59 @@ public class MappingConfiguration {
             return Collections.emptyList();
         }
         
-        if (jsonPathValue instanceof String) {
+        if (jsonPathValue instanceof String jsonPath) {
             // Single JSONPath (backward compatibility)
-            return Arrays.asList((String) jsonPathValue);
-        } else if (jsonPathValue instanceof List) {
+            return List.of(jsonPath);
+        } else if (jsonPathValue instanceof List<?> pathList) {
             // Multiple JSONPaths
-            List<?> pathList = (List<?>) jsonPathValue;
             return pathList.stream()
                     .map(String::valueOf)
-                    .collect(java.util.stream.Collectors.toList());
+                    .toList();
         } else {
             throw new IllegalArgumentException("jsonPath must be either a string or an array of strings");
         }
     }
     
     /**
-     * Represents a single mapping rule
+     * Represents a single mapping rule with support for multiple data sources
      */
+    @Data
     public static class MappingRule {
         private final MapperType mapperType;
         private final String templateName;
-        private final String jsonPath;
+        private final List<String> jsonPaths;
         
-        public MappingRule(MapperType mapperType, String templateName, String jsonPath) {
+        public MappingRule(MapperType mapperType, String templateName, List<String> jsonPaths) {
             this.mapperType = mapperType;
             this.templateName = templateName;
-            this.jsonPath = jsonPath;
+            this.jsonPaths = jsonPaths != null ? jsonPaths : Collections.emptyList();
         }
         
-        public MapperType getMapperType() { return mapperType; }
-        public String getTemplateName() { return templateName; }
-        public String getJsonPath() { return jsonPath; }
+        // Backward compatibility constructor
+        public MappingRule(MapperType mapperType, String templateName, String jsonPath) {
+            this(mapperType, templateName, 
+                 jsonPath != null ? List.of(jsonPath) : Collections.emptyList());
+        }
+
+        // Backward compatibility method
+        public String getJsonPath() {
+            return jsonPaths.isEmpty() ? null : jsonPaths.get(0);
+        }
+        
+        public boolean hasMultipleSources() {
+            return jsonPaths.size() > 1;
+        }
         
         public boolean isArrayProcessing() {
-            return jsonPath != null && jsonPath.endsWith("[*]");
+            return !jsonPaths.isEmpty() && jsonPaths.get(0).endsWith("[*]");
         }
         
         public String getArrayPath() {
             if (!isArrayProcessing()) {
                 throw new IllegalStateException("Not an array processing rule");
             }
-            return jsonPath.substring(0, jsonPath.length() - 3);
+            String firstPath = jsonPaths.get(0);
+            return firstPath.substring(0, firstPath.length() - 3);
         }
     }
 }

@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.HashMap;
 import java.util.Map;
 
-public class JsonStructureMapperTest {
+class JsonStructureMapperTest {
     
     private JsonStructureMapper mapper;
     
@@ -21,7 +21,7 @@ public class JsonStructureMapperTest {
         String sourceJson = """
             {
                 "orders": [
-                    {"id": "ORD-001", "product": "Laptop", "price": 1299.99, "quantity": 1, "status": "shipped"}
+                    {"orderId": "ORD-001", "productName": "Laptop", "price": 1299.99, "quantity": 1, "status": "shipped"}
                 ]
             }
             """;
@@ -80,7 +80,7 @@ public class JsonStructureMapperTest {
         String sourceJson = """
             {
                 "user": {"name": "John", "email": "john@example.com", "profile": {"age": 30, "location": "NYC"}},
-                "orders": [{"id": "ORD-001", "product": "Book", "price": 15.99, "quantity": 2, "status": "pending"}],
+                "orders": [{"orderId": "ORD-001", "productName": "Book", "price": 15.99, "quantity": 2, "status": "pending"}],
                 "settings": {"theme": "light", "notifications": false}
             }
             """;
