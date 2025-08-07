@@ -1,0 +1,36 @@
+{
+    "user": {
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "profile": {
+            "age": 30,
+            "location": "New York",
+            "preferences": {
+                "language": "English",
+                "timezone": "EST"
+            }
+        },
+        "active": true
+    },
+    "orders": [
+        {
+            "id": "ORD-001",
+            "product": "Laptop",
+            "price": 1299.99,
+            "quantity": 1,
+            "status": "shipped"
+        },
+        {
+            "id": "ORD-002", 
+            "product": "Mouse",
+            "price": 29.99,
+            "quantity": 2,
+            "status": "pending"
+        }
+    ],
+    "settings": {
+        "theme": "dark",
+        "notifications": true,
+        "autoSave": false
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "client": {
+        "Orders": {
+            "mapperType": "MUSTACHE",
+            "templateName": "ORDER_DETAIL",
+            "jsonPath": "$.orders[*]"
+        },
+        "UserInfo": {
+            "mapperType": "MUSTACHE",
+            "templateName": "USER_SUMMARY", 
+            "jsonPath": "$.user"
+        },
+        "Settings": {
+            "mapperType": "COPY",
+            "jsonPath": "$.settings"
+        }
+    }
+}
