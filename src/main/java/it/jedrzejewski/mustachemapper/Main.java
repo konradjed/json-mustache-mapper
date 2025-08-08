@@ -1,6 +1,7 @@
 package it.jedrzejewski.mustachemapper;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,8 +9,9 @@ import java.util.Map;
 /**
  * Main application demonstrating the JSON structure mapping capabilities
  */
-@Slf4j
 public class Main {
+    
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
 
     public static final String MAPPER_TYPE = "mapperType";
     public static final String TEMPLATE_NAME = "templateName";
@@ -82,10 +84,12 @@ public class Main {
             // Transform JSON structure
             String result = mapper.transformJsonStructure(sourceJson, mappingConfig);
             
-            log.info("🎯 JSON Structure Mapping Result:");
-            log.info("=".repeat(50));
-            log.info(result);
-            
+            if (log.isInfoEnabled()) {
+                log.info("🎯 JSON Structure Mapping Result:");
+                log.info("=".repeat(50));
+                log.info(result);
+            }
+
             // Demonstrate template registration
             mapper.registerTemplate("CUSTOM_ORDER", "📦 {{product}} - {{quantity}} units @ ${{price}}");
             log.info("\n✅ Custom template registered successfully!");

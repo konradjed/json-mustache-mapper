@@ -1,19 +1,18 @@
 package it.jedrzejewski.mustachemapper.mapper;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Map;
 
 /**
- * Handles direct copying of JSON fragments without transformation
+ * Handles direct copying of data fragments without transformation
  */
 public class CopyMapper {
     
     /**
-     * Copy JSON fragment directly to target
+     * Copy data fragment directly to target
      */
-    public void processMapping(JsonNode extractedData, ObjectNode targetNode, String targetKey) {
+    public void processMapping(Object extractedData, Map<String, Object> targetData, String targetKey) {
         if (extractedData != null) {
-            targetNode.set(targetKey, extractedData);
+            targetData.put(targetKey, extractedData);
         }
     }
 }

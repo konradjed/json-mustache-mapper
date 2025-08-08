@@ -13,7 +13,10 @@ import java.util.Map;
 /**
  * Wrapper that provides seamless access to JsonNode properties in Mustache templates
  * This class implements Map-like behavior to work with Mustache.java
+ * 
+ * @deprecated Use Map<String, Object> directly instead of JsonNode
  */
+@Deprecated
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class JsonNodeWrapper extends HashMap<String, Object> {

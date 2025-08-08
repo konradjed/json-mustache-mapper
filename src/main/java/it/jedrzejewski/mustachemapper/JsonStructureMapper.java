@@ -3,12 +3,12 @@ package it.jedrzejewski.mustachemapper;
 import it.jedrzejewski.mustachemapper.config.MappingConfiguration;
 import it.jedrzejewski.mustachemapper.mapper.MappingProcessor;
 import it.jedrzejewski.mustachemapper.template.TemplateRegistry;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Data;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -25,7 +25,7 @@ public class JsonStructureMapper {
     public JsonStructureMapper() {
         this.objectMapper = new ObjectMapper();
         this.templateRegistry = new TemplateRegistry();
-        this.mappingProcessor = new MappingProcessor(objectMapper, templateRegistry);
+        this.mappingProcessor = new MappingProcessor(templateRegistry);
     }
     
     /**
@@ -36,13 +36,14 @@ public class JsonStructureMapper {
      * @return Transformed JSON string
      */
     public String transformJsonStructure(String sourceJson, Map<String, Object> mappingConfig) throws IOException {
-        JsonNode sourceNode = objectMapper.readTree(sourceJson);
-        ObjectNode targetNode = objectMapper.createObjectNode();
+        // Convert JSON string to Map
+        Map<String, Object> sourceData = objectMapper.readValue(sourceJson, new TypeReference<>() {});
+        Map<String, Object> targetData = new HashMap<>();
         
         MappingConfiguration config = new MappingConfiguration(mappingConfig);
-        mappingProcessor.processMapping(sourceNode, targetNode, config);
+        mappingProcessor.processMapping(sourceData, targetData, config);
         
-        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(targetNode);
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(targetData);
     }
     
     /**

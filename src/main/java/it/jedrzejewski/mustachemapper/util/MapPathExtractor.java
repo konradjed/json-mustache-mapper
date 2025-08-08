@@ -1,45 +1,43 @@
 package it.jedrzejewski.mustachemapper.util;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Utility for extracting JSON fragments using JSONPath-like syntax
- * 
- * @deprecated Use MapPathExtractor instead for Map<String, Object> data
+ * Utility for extracting data fragments from Map using JSONPath-like syntax
  */
-@Deprecated
-public class JsonPathExtractor {
+public class MapPathExtractor {
     
     /**
-     * Extract JSON fragment by path
+     * Extract data fragment by path
      * Supports: $.orders, $.user.profile, $.orders[0], $.orders[*]
      */
-    public JsonNode extractPath(JsonNode rootNode, String jsonPath) {
-        if (rootNode == null || jsonPath == null) {
+    public Object extractPath(Map<String, Object> rootData, String jsonPath) {
+        if (rootData == null || jsonPath == null) {
             return null;
         }
         
         // Handle array wildcard specially
         if (jsonPath.endsWith("[*]")) {
             String arrayPath = jsonPath.substring(0, jsonPath.length() - 3);
-            return extractSinglePath(rootNode, arrayPath);
+            return extractSinglePath(rootData, arrayPath);
         }
         
-        return extractSinglePath(rootNode, jsonPath);
+        return extractSinglePath(rootData, jsonPath);
     }
     
     /**
      * Extract single path (non-wildcard)
      */
-    private JsonNode extractSinglePath(JsonNode rootNode, String jsonPath) {
+    private Object extractSinglePath(Map<String, Object> rootData, String jsonPath) {
         String path = normalizeJsonPath(jsonPath);
         
         if (path.isEmpty()) {
-            return rootNode;
+            return rootData;
         }
         
         String[] parts = path.split("\\.");
-        JsonNode current = rootNode;
+        Object current = rootData;
         
         for (String part : parts) {
             if (current == null) {
@@ -55,32 +53,49 @@ public class JsonPathExtractor {
     /**
      * Process a single path part (field access or array index)
      */
-    private JsonNode processPathPart(JsonNode node, String part) {
+    private Object processPathPart(Object data, String part) {
         if (part.contains("[") && part.contains("]")) {
-            return processArrayAccess(node, part);
+            return processArrayAccess(data, part);
         } else {
-            return node.get(part);
+            if (data instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> map = (Map<String, Object>) data;
+                return map.get(part);
+            }
+            return null;
         }
     }
     
     /**
      * Process array access like "orders[0]"
      */
-    private JsonNode processArrayAccess(JsonNode node, String part) {
+    private Object processArrayAccess(Object data, String part) {
         String arrayField = part.substring(0, part.indexOf("["));
         String indexStr = part.substring(part.indexOf("[") + 1, part.indexOf("]"));
         
-        // Get array node
-        JsonNode arrayNode = arrayField.isEmpty() ? node : node.get(arrayField);
-        
-        if (arrayNode == null || !arrayNode.isArray()) {
+        // Get array data
+        Object arrayData;
+        if (arrayField.isEmpty()) {
+            arrayData = data;
+        } else if (data instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) data;
+            arrayData = map.get(arrayField);
+        } else {
             return null;
         }
         
+        if (!(arrayData instanceof List)) {
+            return null;
+        }
+        
+        @SuppressWarnings("unchecked")
+        List<Object> list = (List<Object>) arrayData;
+        
         try {
             int index = Integer.parseInt(indexStr);
-            if (index >= 0 && index < arrayNode.size()) {
-                return arrayNode.get(index);
+            if (index >= 0 && index < list.size()) {
+                return list.get(index);
             }
         } catch (NumberFormatException e) {
             // Invalid index format

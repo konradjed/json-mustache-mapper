@@ -1,7 +1,6 @@
 package it.jedrzejewski.mustachemapper.config;
 
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 import java.util.*;
 
@@ -10,10 +9,17 @@ import java.util.*;
  * source JSON structure to target JSON structure.
  */
 @Data
-@RequiredArgsConstructor
 public class MappingConfiguration {
     
     private final Map<String, Object> configMap;
+    
+    public MappingConfiguration(Map<String, Object> configMap) {
+        this.configMap = configMap;
+    }
+    
+    public Map<String, Object> getConfigMap() {
+        return configMap;
+    }
 
     /**
      * Check if a configuration entry is a mapping rule

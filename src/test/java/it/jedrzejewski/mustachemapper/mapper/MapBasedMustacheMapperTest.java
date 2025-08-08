@@ -17,9 +17,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for multi-source Mustache template functionality using Map-based approach
+ * Tests for Map-based Mustache template functionality
+ * Demonstrates the new Map<String, Object> approach instead of JsonNode
  */
-class MultiSourceMustacheMapperTest {
+class MapBasedMustacheMapperTest {
     
     private MustacheMapper mustacheMapper;
     private ObjectMapper objectMapper;
@@ -39,7 +40,7 @@ class MultiSourceMustacheMapperTest {
     }
     
     @Test
-    void testMultiSourceSingleMapping() throws IOException {
+    void testMultiSourceSingleMappingWithMap() throws IOException {
         String sourceJson = """
             {
                 "user": {"name": "John", "email": "john@example.com"},
@@ -48,6 +49,7 @@ class MultiSourceMustacheMapperTest {
             }
             """;
         
+        // Convert JSON to Map
         Map<String, Object> sourceData = objectMapper.readValue(sourceJson, new TypeReference<>() {});
         Map<String, Object> targetData = new HashMap<>();
         
@@ -64,7 +66,7 @@ class MultiSourceMustacheMapperTest {
     }
     
     @Test
-    void testMultiSourceArrayMapping() throws IOException {
+    void testMultiSourceArrayMappingWithMap() throws IOException {
         String sourceJson = """
             {
                 "orders": [
@@ -95,7 +97,7 @@ class MultiSourceMustacheMapperTest {
     }
     
     @Test
-    void testBackwardCompatibilitySingleSource() throws IOException {
+    void testSingleSourceMappingWithMap() throws IOException {
         String sourceJson = """
             {
                 "user": {"name": "Bob", "email": "bob@example.com"}
@@ -105,7 +107,7 @@ class MultiSourceMustacheMapperTest {
         Map<String, Object> sourceData = objectMapper.readValue(sourceJson, new TypeReference<>() {});
         Map<String, Object> targetData = new HashMap<>();
         
-        // Single source using old constructor
+        // Single source mapping
         MappingConfiguration.MappingRule rule = new MappingConfiguration.MappingRule(
             MapperType.MUSTACHE,
             "USER_SUMMARY",
@@ -120,7 +122,30 @@ class MultiSourceMustacheMapperTest {
     }
     
     @Test
-    void testMissingDataSource() throws IOException {
+    void testDirectMapUsage() {
+        // Create data directly as Map (no JSON conversion needed)
+        Map<String, Object> userData = Map.of(
+            "name", "Alice",
+            "email", "alice@example.com"
+        );
+        
+        Map<String, Object> sourceData = Map.of("user", userData);
+        Map<String, Object> targetData = new HashMap<>();
+        
+        MappingConfiguration.MappingRule rule = new MappingConfiguration.MappingRule(
+            MapperType.MUSTACHE,
+            "USER_SUMMARY",
+            "$.user"
+        );
+        
+        mustacheMapper.processMapping(sourceData, targetData, "summary", rule);
+        
+        String result = (String) targetData.get("summary");
+        assertEquals("User: Alice (alice@example.com)", result);
+    }
+    
+    @Test
+    void testMissingDataSourceWithMap() throws IOException {
         String sourceJson = """
             {
                 "user": {"name": "Alice"}
@@ -145,23 +170,31 @@ class MultiSourceMustacheMapperTest {
     }
     
     @Test
-    void testEmptyJsonPathList() throws IOException {
-        String sourceJson = """
-            {
-                "user": {"name": "Charlie"}
-            }
-            """;
+    void testNestedPathExtractionWithMap() {
+        Map<String, Object> sourceData = Map.of(
+            "user", Map.of(
+                "profile", Map.of(
+                    "name", "Charlie",
+                    "preferences", Map.of(
+                        "theme", "dark",
+                        "language", "es"
+                    )
+                )
+            )
+        );
         
-        Map<String, Object> sourceData = objectMapper.readValue(sourceJson, new TypeReference<>() {});
         Map<String, Object> targetData = new HashMap<>();
         
+        // Test nested path extraction
         MappingConfiguration.MappingRule rule = new MappingConfiguration.MappingRule(
             MapperType.MUSTACHE,
             "USER_SUMMARY",
-            List.of()
+            "$.user.profile"
         );
         
-        // Should handle empty path list gracefully
-        assertDoesNotThrow(() -> mustacheMapper.processMapping(sourceData, targetData, "result", rule));
+        mustacheMapper.processMapping(sourceData, targetData, "profile", rule);
+        
+        String result = (String) targetData.get("profile");
+        assertTrue(result.contains("Charlie"));
     }
 }

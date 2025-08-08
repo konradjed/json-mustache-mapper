@@ -2,15 +2,17 @@ package it.jedrzejewski.mustachemapper.debug;
 
 import it.jedrzejewski.mustachemapper.JsonStructureMapper;
 import it.jedrzejewski.mustachemapper.wrapper.MultiSourceDataContext;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
- * Debug test for multi-source functionality
+ * Debug test for multi-source functionality using Map-based approach
  */
 class MultiSourceDebugTest {
     
@@ -37,17 +39,19 @@ class MultiSourceDebugTest {
             }
             """;
         
-        JsonNode sourceNode = mapper.readTree(sourceJson);
+        Map<String, Object> sourceData = mapper.readValue(sourceJson, new TypeReference<>() {});
         
         // Test MultiSourceDataContext directly
         MultiSourceDataContext context = new MultiSourceDataContext();
         
         // Add primary data (order)
-        JsonNode orderData = sourceNode.get("orders").get(0);
-        context.setPrimaryDataSource(orderData);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> ordersArray = (Map<String, Object>) ((java.util.List<?>) sourceData.get("orders")).get(0);
+        context.setPrimaryDataSource(ordersArray);
         
         // Add secondary data (user)
-        JsonNode userData = sourceNode.get("user");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> userData = (Map<String, Object>) sourceData.get("user");
         context.addDataSource("source2", userData);
         
         System.out.println("Context keys: " + context.keySet());
@@ -58,6 +62,9 @@ class MultiSourceDebugTest {
         if (context.get("source2") != null) {
             System.out.println("source2 type: " + context.get("source2").getClass());
         }
+
+        assertTrue(context.get("orderId").toString().contains("ORD-001"));
+        assertTrue(context.get("productName").toString().contains("Laptop"));
     }
     
     @Test
@@ -93,5 +100,7 @@ class MultiSourceDebugTest {
         
         System.out.println("Full mapping result:");
         System.out.println(result);
+        assertTrue(result.contains("ORD-001"));
+        assertTrue(result.contains("John Doe (john@example.com)"));
     }
 }

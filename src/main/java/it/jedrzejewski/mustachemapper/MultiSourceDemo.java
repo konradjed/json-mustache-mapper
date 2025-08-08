@@ -1,7 +1,8 @@
 package it.jedrzejewski.mustachemapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,8 +12,9 @@ import java.util.Map;
 /**
  * Demonstration of multi-source Mustache template functionality
  */
-@Slf4j
 public class MultiSourceDemo {
+    
+    private static final Logger log = LoggerFactory.getLogger(MultiSourceDemo.class);
     
     public static void main(String[] args) {
         try {
@@ -39,13 +41,15 @@ public class MultiSourceDemo {
         JsonStructureMapper structureMapper = new JsonStructureMapper();
         String result = structureMapper.transformJsonStructure(dataJson, config);
         
-        log.info("Input Data:");
-        log.info(formatJson(dataJson));
-        log.info("\nConfiguration:");
-        log.info(formatJson(configJson));
-        log.info("\nTransformed Result:");
-        log.info(formatJson(result));
-        
+        if (log.isInfoEnabled()) {
+            log.info("Input Data:");
+            log.info(formatJson(dataJson));
+            log.info("\nConfiguration:");
+            log.info(formatJson(configJson));
+            log.info("\nTransformed Result:");
+            log.info(formatJson(result));
+        }
+
         // Demonstrate individual template explanations
         demonstrateTemplateExplanations();
     }

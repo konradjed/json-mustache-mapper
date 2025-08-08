@@ -3,161 +3,195 @@ package it.jedrzejewski.mustachemapper.mapper;
 import it.jedrzejewski.mustachemapper.config.MappingConfiguration.MappingRule;
 import it.jedrzejewski.mustachemapper.template.TemplateEngine;
 import it.jedrzejewski.mustachemapper.template.TemplateRegistry;
-import it.jedrzejewski.mustachemapper.util.JsonPathExtractor;
-import it.jedrzejewski.mustachemapper.wrapper.JsonNodeWrapper;
+import it.jedrzejewski.mustachemapper.util.MapPathExtractor;
 import it.jedrzejewski.mustachemapper.wrapper.MultiSourceDataContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Handles Mustache template processing for JSON data with support for multiple data sources
+ * Handles Mustache template processing with support for single and multiple data sources
  */
 public class MustacheMapper {
-    
-    private final ObjectMapper objectMapper;
+
+    public static final String VALUE = "value";
     private final TemplateEngine templateEngine;
-    private final JsonPathExtractor jsonPathExtractor;
+    private final MapPathExtractor pathExtractor;
     
-    public MustacheMapper(ObjectMapper objectMapper, TemplateRegistry templateRegistry) {
-        this.objectMapper = objectMapper;
+    public MustacheMapper(TemplateRegistry templateRegistry) {
         this.templateEngine = new TemplateEngine(templateRegistry);
-        this.jsonPathExtractor = new JsonPathExtractor();
+        this.pathExtractor = new MapPathExtractor();
     }
     
     /**
-     * Process JSON data through Mustache template with support for multiple data sources
+     * Main entry point for processing mapping rules
      */
-    public void processMapping(JsonNode sourceNode, ObjectNode targetNode, String targetKey, MappingRule rule) {
-        String templateName = rule.getTemplateName();
-        if (templateName == null) {
-            throw new IllegalArgumentException("Template name is required for MUSTACHE mapping");
-        }
+    public void processMapping(Map<String, Object> sourceData, Map<String, Object> targetData, String targetKey, MappingRule rule) {
+        validateRule(rule);
+        
+        MappingRequest request = new MappingRequest(sourceData, targetData, targetKey, rule);
         
         if (rule.hasMultipleSources()) {
-            processMultiSourceMapping(sourceNode, targetNode, targetKey, rule);
+            processMultiSourceMapping(request);
         } else {
-            // Single source processing (backward compatibility)
-            JsonNode extractedData = jsonPathExtractor.extractPath(sourceNode, rule.getJsonPath());
-            if (extractedData == null) {
-                return;
-            }
-            
-            if (rule.isArrayProcessing() && extractedData.isArray()) {
-                processArrayMapping(extractedData, targetNode, targetKey, templateName);
-            } else {
-                processSingleMapping(extractedData, targetNode, targetKey, templateName);
-            }
+            processSingleSourceMapping(request);
         }
     }
     
-    /**
-     * Process mapping with multiple data sources
-     */
-    private void processMultiSourceMapping(JsonNode sourceNode, ObjectNode targetNode, String targetKey, MappingRule rule) {
-        List<String> jsonPaths = rule.getJsonPaths();
-        String templateName = rule.getTemplateName();
+    // ========== Single Source Processing ==========
+    
+    private void processSingleSourceMapping(MappingRequest request) {
+        Object extractedData = pathExtractor.extractPath(request.sourceData, request.rule.getJsonPath());
+        if (extractedData == null) {
+            return;
+        }
         
-        // Determine if we're dealing with array processing based on the first path
-        boolean isArrayProcessing = rule.isArrayProcessing();
-        
-        if (isArrayProcessing) {
-            processMultiSourceArrayMapping(sourceNode, targetNode, targetKey, templateName, jsonPaths);
+        if (request.rule.isArrayProcessing() && extractedData instanceof List) {
+            processArrayData((List<?>) extractedData, request);
         } else {
-            processMultiSourceSingleMapping(sourceNode, targetNode, targetKey, templateName, jsonPaths);
+            processSingleData(extractedData, request);
         }
     }
     
-    /**
-     * Process array items with multiple data sources
-     */
-    private void processMultiSourceArrayMapping(JsonNode sourceNode, ObjectNode targetNode, String targetKey, 
-                                              String templateName, List<String> jsonPaths) {
-        ArrayNode targetArray = objectMapper.createArrayNode();
+    private void processArrayData(List<?> arrayData, MappingRequest request) {
+        List<String> results = new ArrayList<>();
         
-        // Extract the primary array data (first JSONPath)
-        String primaryPath = jsonPaths.get(0);
-        JsonNode primaryArrayData = jsonPathExtractor.extractPath(sourceNode, primaryPath);
-        
-        if (primaryArrayData != null && primaryArrayData.isArray()) {
-            // For each item in the primary array, create a context with all data sources
-            for (JsonNode arrayItem : primaryArrayData) {
-                MultiSourceDataContext context = createMultiSourceContext(sourceNode, jsonPaths, arrayItem);
-                String renderedText = templateEngine.render(templateName, context);
-                targetArray.add(renderedText);
-            }
+        for (Object item : arrayData) {
+            Map<String, Object> context = convertToMap(item);
+            String rendered = templateEngine.render(request.rule.getTemplateName(), context);
+            results.add(rendered);
         }
         
-        targetNode.set(targetKey, targetArray);
+        request.targetData.put(request.targetKey, results);
     }
     
-    /**
-     * Process single item with multiple data sources
-     */
-    private void processMultiSourceSingleMapping(JsonNode sourceNode, ObjectNode targetNode, String targetKey, 
-                                               String templateName, List<String> jsonPaths) {
-        MultiSourceDataContext context = createMultiSourceContext(sourceNode, jsonPaths, null);
-        String renderedText = templateEngine.render(templateName, context);
-        targetNode.put(targetKey, renderedText);
+    private void processSingleData(Object data, MappingRequest request) {
+        Map<String, Object> context = convertToMap(data);
+        String rendered = templateEngine.render(request.rule.getTemplateName(), context);
+        request.targetData.put(request.targetKey, rendered);
     }
     
-    /**
-     * Create a multi-source data context for template rendering
-     */
-    private MultiSourceDataContext createMultiSourceContext(JsonNode sourceNode, List<String> jsonPaths, JsonNode primaryItem) {
+    // ========== Multi Source Processing ==========
+    
+    private void processMultiSourceMapping(MappingRequest request) {
+        if (request.rule.isArrayProcessing()) {
+            processMultiSourceArray(request);
+        } else {
+            processMultiSourceSingle(request);
+        }
+    }
+    
+    private void processMultiSourceArray(MappingRequest request) {
+        List<String> jsonPaths = request.rule.getJsonPaths();
+        Object primaryArrayData = pathExtractor.extractPath(request.sourceData, jsonPaths.get(0));
+        
+        if (!(primaryArrayData instanceof List)) {
+            return;
+        }
+        
+        List<String> results = new ArrayList<>();
+        List<?> arrayList = (List<?>) primaryArrayData;
+        
+        for (Object arrayItem : arrayList) {
+            MultiSourceDataContext context = createMultiSourceContext(request.sourceData, jsonPaths, arrayItem);
+            String rendered = templateEngine.render(request.rule.getTemplateName(), context);
+            results.add(rendered);
+        }
+        
+        request.targetData.put(request.targetKey, results);
+    }
+    
+    private void processMultiSourceSingle(MappingRequest request) {
+        MultiSourceDataContext context = createMultiSourceContext(request.sourceData, request.rule.getJsonPaths(), null);
+        String rendered = templateEngine.render(request.rule.getTemplateName(), context);
+        request.targetData.put(request.targetKey, rendered);
+    }
+    
+    // ========== Context Creation ==========
+    
+    private MultiSourceDataContext createMultiSourceContext(Map<String, Object> sourceData, List<String> jsonPaths, Object primaryItem) {
         MultiSourceDataContext context = new MultiSourceDataContext();
         
         for (int i = 0; i < jsonPaths.size(); i++) {
-            String jsonPath = jsonPaths.get(i);
-            JsonNode extractedData;
-            
-            if (i == 0 && primaryItem != null) {
-                // For the first path in array processing, use the current array item
-                extractedData = primaryItem;
-            } else {
-                // For other paths, extract from the source node
-                extractedData = jsonPathExtractor.extractPath(sourceNode, jsonPath);
-            }
+            Object extractedData = extractDataForSource(sourceData, jsonPaths.get(i), i == 0 ? primaryItem : null);
             
             if (extractedData != null) {
-                if (i == 0) {
-                    // First data source becomes the primary context
-                    context.setPrimaryDataSource(extractedData);
-                } else {
-                    // Additional data sources are accessible with generated keys
-                    String sourceKey = "source" + (i + 1);
-                    context.addDataSource(sourceKey, extractedData);
-                }
+                addDataToContext(context, extractedData, i);
             }
         }
         
         return context;
     }
     
-    /**
-     * Process array of items through template (single source - backward compatibility)
-     */
-    private void processArrayMapping(JsonNode arrayData, ObjectNode targetNode, String targetKey, String templateName) {
-        ArrayNode targetArray = objectMapper.createArrayNode();
-        
-        for (JsonNode item : arrayData) {
-            JsonNodeWrapper wrapper = new JsonNodeWrapper(item);
-            String renderedText = templateEngine.render(templateName, wrapper);
-            targetArray.add(renderedText);
-        }
-        
-        targetNode.set(targetKey, targetArray);
+    private Object extractDataForSource(Map<String, Object> sourceData, String jsonPath, Object primaryItem) {
+        return primaryItem != null ? primaryItem : pathExtractor.extractPath(sourceData, jsonPath);
     }
     
+    private void addDataToContext(MultiSourceDataContext context, Object data, int sourceIndex) {
+        if (sourceIndex == 0) {
+            addPrimaryData(context, data);
+        } else {
+            addSecondaryData(context, data, sourceIndex);
+        }
+    }
+    
+    private void addPrimaryData(MultiSourceDataContext context, Object data) {
+        if (data instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> mapData = (Map<String, Object>) data;
+            context.setPrimaryDataSource(mapData);
+        } else {
+            context.addValue(VALUE, data);
+        }
+    }
+    
+    private void addSecondaryData(MultiSourceDataContext context, Object data, int sourceIndex) {
+        String sourceKey = "source" + (sourceIndex + 1);
+        
+        if (data instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> mapData = (Map<String, Object>) data;
+            context.addDataSource(sourceKey, mapData);
+        } else {
+            Map<String, Object> wrappedData = Map.of(VALUE, data);
+            context.addDataSource(sourceKey, wrappedData);
+        }
+    }
+    
+    // ========== Utility Methods ==========
+    
+    private void validateRule(MappingRule rule) {
+        if (rule.getTemplateName() == null) {
+            throw new IllegalArgumentException("Template name is required for MUSTACHE mapping");
+        }
+    }
+    
+    private Map<String, Object> convertToMap(Object data) {
+        if (data instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> mapData = (Map<String, Object>) data;
+            return mapData;
+        }
+        return Map.of(VALUE, data);
+    }
+    
+    // ========== Inner Class for Request Data ==========
+    
     /**
-     * Process single item through template (single source - backward compatibility)
+     * Encapsulates mapping request data to reduce parameter passing
      */
-    private void processSingleMapping(JsonNode singleData, ObjectNode targetNode, String targetKey, String templateName) {
-        JsonNodeWrapper wrapper = new JsonNodeWrapper(singleData);
-        String renderedText = templateEngine.render(templateName, wrapper);
-        targetNode.put(targetKey, renderedText);
+    private static class MappingRequest {
+        final Map<String, Object> sourceData;
+        final Map<String, Object> targetData;
+        final String targetKey;
+        final MappingRule rule;
+        
+        MappingRequest(Map<String, Object> sourceData, Map<String, Object> targetData, String targetKey, MappingRule rule) {
+            this.sourceData = sourceData;
+            this.targetData = targetData;
+            this.targetKey = targetKey;
+            this.rule = rule;
+        }
     }
 }

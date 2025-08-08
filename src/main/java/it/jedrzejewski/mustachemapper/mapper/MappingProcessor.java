@@ -2,27 +2,23 @@ package it.jedrzejewski.mustachemapper.mapper;
 
 import it.jedrzejewski.mustachemapper.config.MappingConfiguration;
 import it.jedrzejewski.mustachemapper.template.TemplateRegistry;
-import it.jedrzejewski.mustachemapper.util.JsonPathExtractor;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.jedrzejewski.mustachemapper.util.MapPathExtractor;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Processes mapping configurations and applies transformations to JSON nodes
+ * Processes mapping configurations and applies transformations to Map data
  */
 public class MappingProcessor {
-    
-    private final ObjectMapper objectMapper;
-    private final JsonPathExtractor jsonPathExtractor;
+
+    private final MapPathExtractor mapPathExtractor;
     private final MustacheMapper mustacheMapper;
     private final CopyMapper copyMapper;
     
-    public MappingProcessor(ObjectMapper objectMapper, TemplateRegistry templateRegistry) {
-        this.objectMapper = objectMapper;
-        this.jsonPathExtractor = new JsonPathExtractor();
-        this.mustacheMapper = new MustacheMapper(objectMapper, templateRegistry);
+    public MappingProcessor(TemplateRegistry templateRegistry) {
+        this.mapPathExtractor = new MapPathExtractor();
+        this.mustacheMapper = new MustacheMapper(templateRegistry);
         this.copyMapper = new CopyMapper();
     }
     
@@ -30,19 +26,19 @@ public class MappingProcessor {
      * Process the entire mapping configuration
      */
     @SuppressWarnings("unchecked")
-    public void processMapping(JsonNode sourceNode, ObjectNode targetNode, MappingConfiguration config) {
+    public void processMapping(Map<String, Object> sourceData, Map<String, Object> targetData, MappingConfiguration config) {
         for (Map.Entry<String, Object> entry : config.getConfigMap().entrySet()) {
             String targetKey = entry.getKey();
             Object configValue = entry.getValue();
             
             if (config.isMappingRule(configValue)) {
-                processMappingRule(sourceNode, targetNode, targetKey, config.getMappingRule(configValue));
+                processMappingRule(sourceData, targetData, targetKey, config.getMappingRule(configValue));
             } else if (configValue instanceof Map) {
                 // Nested configuration
-                ObjectNode nestedTarget = objectMapper.createObjectNode();
+                Map<String, Object> nestedTarget = new HashMap<>();
                 MappingConfiguration nestedConfig = new MappingConfiguration((Map<String, Object>) configValue);
-                processMapping(sourceNode, nestedTarget, nestedConfig);
-                targetNode.set(targetKey, nestedTarget);
+                processMapping(sourceData, nestedTarget, nestedConfig);
+                targetData.put(targetKey, nestedTarget);
             }
         }
     }
@@ -50,16 +46,16 @@ public class MappingProcessor {
     /**
      * Process a single mapping rule
      */
-    private void processMappingRule(JsonNode sourceNode, ObjectNode targetNode, String targetKey, 
+    private void processMappingRule(Map<String, Object> sourceData, Map<String, Object> targetData, String targetKey, 
                                    MappingConfiguration.MappingRule rule) {
         
         switch (rule.getMapperType()) {
             case MUSTACHE:
-                mustacheMapper.processMapping(sourceNode, targetNode, targetKey, rule);
+                mustacheMapper.processMapping(sourceData, targetData, targetKey, rule);
                 break;
             case COPY:
-                JsonNode extractedData = jsonPathExtractor.extractPath(sourceNode, rule.getJsonPath());
-                copyMapper.processMapping(extractedData, targetNode, targetKey);
+                Object extractedData = mapPathExtractor.extractPath(sourceData, rule.getJsonPath());
+                copyMapper.processMapping(extractedData, targetData, targetKey);
                 break;
             case TRANSFORM:
                 // Reserved for future custom transformations
