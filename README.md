@@ -24,7 +24,7 @@ A Java library for mapping JSON structures using Mustache templates with JSONPat
 
 3. **Run the multi-source demo:**
    ```bash
-   mvn exec:java -Dexec.mainClass="com.example.MultiSourceDemo"
+   mvn exec:java -Dexec.mainClass="it.jedrzejewski.mustachemapper.MultiSourceDemo"
    ```
 
 4. **Use in your code:**
